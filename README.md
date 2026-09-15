@@ -1,6 +1,6 @@
 # Aziza & Ravshan — Wedding Invitation
 
-Статическая свадебная страница для Cloudflare Pages. RSVP отправляется в Telegram через Pages Function; отдельный сервер запускать не нужно.
+Статическая свадебная страница для Cloudflare Pages. RSVP сохраняется в Cloudflare D1 через Pages Function; Telegram и отдельный сервер не нужны.
 
 ## Деплой на Cloudflare Pages
 
@@ -13,10 +13,20 @@
 
 Не указывайте `npx wrangler deploy`: это команда для Cloudflare Worker, а не для Pages. При подключении репозитория Pages сам выполняет публикацию после успешной сборки.
 
-В **Settings -> Variables and Secrets** добавьте для **Production**:
+В Cloudflare создайте D1 database, например `wedding-rsvp`, затем выполните локально:
 
-- `TELEGRAM_BOT_TOKEN` — токен бота
-- `TELEGRAM_CHAT_ID` — ID личного чата или группы
+```bash
+npx wrangler d1 execute wedding-rsvp --remote --file=./schema.sql
+```
+
+В **Settings -> Functions -> D1 database bindings** добавьте binding:
+
+- **Variable name:** `RSVP_DB`
+- **D1 database:** `wedding-rsvp`
+
+В **Settings -> Variables and Secrets** добавьте для **Production** только один secret:
+
+- `ADMIN_KEY` — придуманный длинный пароль для страницы `/admin.html`
 
 После этого нажмите **Save and Deploy**. Cloudflare сам подключит файл `functions/api/rsvp.js` к адресу `/api/rsvp`.
 
@@ -29,16 +39,17 @@ npm run pages:deploy
 
 Важно: в Cloudflare Pages в поле **Build command** нужно указать именно `npm run build`, а не `npm run pages:deploy`. Команда `pages:deploy` вызывает Cloudflare API и предназначена только для ручного запуска вне Cloudflare.
 
-Не добавляйте токен в `script.js`, `index.html` или Git. После публикации токена перевыпустите его через BotFather.
+Откройте `/admin.html`, введите `ADMIN_KEY` и увидите все ответы гостей.
 
 ## Локальная проверка
 
 Для проверки Pages Function локально создайте файл `.dev.vars` (он игнорируется Git):
 
 ```text
-TELEGRAM_BOT_TOKEN=токен_бота
-TELEGRAM_CHAT_ID=chat_id
+ADMIN_KEY=локальный-пароль
 ```
+
+Для локального D1 используйте `.wrangler/state` или подключите удалённую базу через Pages binding.
 
 Запустите:
 
@@ -48,11 +59,9 @@ npm run dev:pages
 
 Откройте адрес, который напечатает Wrangler. Не открывайте `index.html` через `file://`.
 
-## Telegram
+## Хранение ответов
 
-Бот должен быть запущен через `/start`. Для группы его нужно добавить в группу и выдать право отправлять сообщения. `TELEGRAM_CHAT_ID` нельзя заменять именем бота: это числовой ID, у группы обычно начинается с `-100`.
-
-При ошибке Telegram Pages Function пишет точную причину в Cloudflare **Functions -> Logs**, но секреты в ответ браузеру не возвращаются.
+Данные хранятся в D1, а не в браузере и не в файлах сборки. Публичная форма умеет только добавлять ответы. Список доступен только на `/admin.html` при наличии `ADMIN_KEY`; ключ не хранится в HTML.
 
 ## Данные свадьбы
 

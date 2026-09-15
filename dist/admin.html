@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RSVP — список гостей</title>
+  <style>
+    :root { color-scheme: light; font-family: Georgia, serif; color: #18243b; background: #f4efe5; }
+    body { margin: 0; padding: 32px 18px; }
+    main { max-width: 900px; margin: auto; }
+    h1 { font-weight: 500; margin: 0 0 22px; }
+    form { display: flex; gap: 10px; margin-bottom: 24px; }
+    input, button { font: inherit; padding: 11px 13px; border: 1px solid #b9ad99; border-radius: 4px; }
+    input { flex: 1; min-width: 0; }
+    button { color: #fff; background: #18243b; cursor: pointer; }
+    .stats { display: flex; gap: 20px; margin-bottom: 22px; }
+    .stats strong { font-size: 1.5rem; display: block; }
+    .error { color: #a32929; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ded5c7; }
+    th { font-weight: 600; }
+    @media (max-width: 560px) { form { flex-direction: column; } .stats { gap: 14px; flex-wrap: wrap; } table { font-size: .9rem; } th, td { padding: 9px 6px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Ответы гостей</h1>
+    <form id="loginForm">
+      <input id="adminKey" type="password" placeholder="Ключ администратора" autocomplete="current-password" required>
+      <button type="submit">Показать список</button>
+    </form>
+    <p id="error" class="error" role="alert"></p>
+    <section id="content" hidden>
+      <div class="stats">
+        <div><strong id="total">0</strong>всего ответов</div>
+        <div><strong id="yes">0</strong>придут</div>
+        <div><strong id="no">0</strong>не придут</div>
+      </div>
+      <table>
+        <thead><tr><th>Имя</th><th>Ответ</th><th>Дата</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+  </main>
+  <script>
+    const form = document.querySelector("#loginForm");
+    const keyInput = document.querySelector("#adminKey");
+    const error = document.querySelector("#error");
+    const content = document.querySelector("#content");
+    const labels = { yes: "Придёт", no: "Не придёт" };
+
+    function text(value) {
+      return document.createTextNode(value ?? "");
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      error.textContent = "";
+      content.hidden = true;
+      try {
+        const response = await fetch("/api/rsvp", { headers: { "x-admin-key": keyInput.value } });
+        if (!response.ok) throw new Error("Неверный ключ или база не настроена");
+        const data = await response.json();
+        const rsvps = data.rsvps || [];
+        document.querySelector("#total").textContent = rsvps.length;
+        document.querySelector("#yes").textContent = rsvps.filter(item => item.attendance === "yes").length;
+        document.querySelector("#no").textContent = rsvps.filter(item => item.attendance === "no").length;
+        const rows = document.querySelector("#rows");
+        rows.replaceChildren();
+        rsvps.forEach(item => {
+          const row = document.createElement("tr");
+          const name = document.createElement("td");
+          const attendance = document.createElement("td");
+          const date = document.createElement("td");
+          name.append(text(item.name));
+          attendance.append(text(labels[item.attendance] || item.attendance));
+          date.append(text(item.created_at));
+          row.append(name, attendance, date);
+          rows.append(row);
+        });
+        content.hidden = false;
+      } catch (requestError) {
+        error.textContent = requestError.message;
+      }
+    });
+  </script>
+</body>
+</html>

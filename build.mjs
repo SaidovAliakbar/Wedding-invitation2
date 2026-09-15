@@ -10,6 +10,7 @@ fs.mkdirSync(dist, { recursive: true });
 
 const files = [
   "index.html",
+  "admin.html",
   "styles.css",
   "script.js",
   "ornament.svg",

@@ -141,10 +141,10 @@ form.addEventListener("submit", async (event) => {
     $$(".choice").forEach((el, i) => el.classList.toggle("active", i===0));
   } catch {
     msg.textContent = lang === "ru"
-      ? "Не удалось отправить ответ в Telegram. Попробуйте ещё раз."
+      ? "Не удалось сохранить ответ. Попробуйте ещё раз."
       : lang === "en"
         ? "The response could not be sent. Please try again."
-        : "Javobni yuborib bo'lmadi. Qayta urinib ko'ring.";
+        : "Javobni saqlab bo'lmadi. Qayta urinib ko'ring.";
   }
 });
 

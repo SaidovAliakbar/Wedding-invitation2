@@ -2,60 +2,42 @@ function clean(value, max = 120) {
   return String(value ?? "").replace(/[\r\n\t<>]/g, " ").trim().slice(0, max);
 }
 
-function escapeHtml(value) {
-  return value.replace(/[&<>]/g, character => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;"
-  }[character]));
+function json(body, status = 200) {
+  return Response.json(body, { status });
 }
 
 export async function onRequestPost({ request, env }) {
   try {
     const data = await request.json();
     const name = clean(data.name, 80);
-    const attendance = data.attendance === "yes" ? "ПРИДЁТ" : "НЕ ПРИДЁТ";
-    if (!name) {
-      return Response.json({ ok: false }, { status: 400 });
-    }
+    const attendance = data.attendance === "yes" ? "yes" : "no";
+    if (!name) return json({ ok: false, error: "name-required" }, 400);
+    if (!env.RSVP_DB) return json({ ok: false, error: "database-not-configured" }, 503);
 
-    if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
-      return Response.json({ ok: false, error: "telegram-not-configured" }, { status: 503 });
-    }
+    await env.RSVP_DB
+      .prepare("INSERT INTO rsvps (name, attendance, created_at) VALUES (?, ?, datetime('now'))")
+      .bind(name, attendance)
+      .run();
 
-    const stamp = new Intl.DateTimeFormat("ru-RU", {
-      dateStyle: "short",
-      timeStyle: "medium",
-      timeZone: "Asia/Tashkent"
-    }).format(new Date());
-    const text = [
-      "<b>Новый ответ на приглашение</b>",
-      `<b>Имя:</b> ${escapeHtml(name)}`,
-      `<b>Ответ:</b> ${attendance}`,
-      `<b>Время:</b> ${stamp}`
-    ].join("\n");
+    return json({ ok: true });
+  } catch (error) {
+    console.error("RSVP save failed:", error);
+    return json({ ok: false, error: "invalid-request" }, 400);
+  }
+}
 
-    const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: env.TELEGRAM_CHAT_ID,
-          text,
-          parse_mode: "HTML"
-        })
-      }
-    );
+export async function onRequestGet({ request, env }) {
+  if (!env.RSVP_DB || !env.ADMIN_KEY || request.headers.get("x-admin-key") !== env.ADMIN_KEY) {
+    return json({ ok: false }, 401);
+  }
 
-    if (!telegramResponse.ok) {
-      const telegramError = await telegramResponse.json().catch(() => null);
-      console.error("Telegram rejected RSVP:", telegramError?.description || telegramResponse.status);
-      return Response.json({ ok: false, error: "telegram-failed" }, { status: 502 });
-    }
-
-    return Response.json({ ok: true });
-  } catch {
-    return Response.json({ ok: false }, { status: 400 });
+  try {
+    const result = await env.RSVP_DB
+      .prepare("SELECT id, name, attendance, created_at FROM rsvps ORDER BY id DESC")
+      .all();
+    return json({ ok: true, rsvps: result.results });
+  } catch (error) {
+    console.error("RSVP list failed:", error);
+    return json({ ok: false }, 500);
   }
 }
