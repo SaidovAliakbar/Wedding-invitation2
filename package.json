@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev:pages": "npm run build && wrangler pages dev dist",
-    "deploy": "npm run build && wrangler pages deploy dist",
+    "pages:deploy": "npm run build && wrangler pages deploy dist --project-name wedding-invitation",
     "build": "node build.mjs"
   },
   "engines": {

@@ -17,12 +17,14 @@
 
 После этого нажмите **Save and Deploy**. Cloudflare сам подключит файл `functions/api/rsvp.js` к адресу `/api/rsvp`.
 
-Для ручного деплоя:
+Для ручного деплоя с локального компьютера:
 
 ```bash
 npm install
-npm run deploy
+npm run pages:deploy
 ```
+
+Важно: в Cloudflare Pages в поле **Build command** нужно указать именно `npm run build`, а не `npm run pages:deploy`. Команда `pages:deploy` вызывает Cloudflare API и предназначена только для ручного запуска вне Cloudflare.
 
 Не добавляйте токен в `script.js`, `index.html` или Git. После публикации токена перевыпустите его через BotFather.
 
