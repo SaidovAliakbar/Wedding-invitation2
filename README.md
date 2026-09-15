@@ -9,6 +9,9 @@
 - **Build command:** `npm run build`
 - **Build output directory:** `dist`
 - **Root directory:** `/`
+- **Deploy command:** оставить пустым
+
+Не указывайте `npx wrangler deploy`: это команда для Cloudflare Worker, а не для Pages. При подключении репозитория Pages сам выполняет публикацию после успешной сборки.
 
 В **Settings -> Variables and Secrets** добавьте для **Production**:
 
