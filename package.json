@@ -1,0 +1,16 @@
+{
+  "name": "aziza-ravshan-wedding",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev:pages": "npm run build && wrangler pages dev dist",
+    "deploy": "npm run build && wrangler pages deploy dist",
+    "build": "node build.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "wrangler": "^4.131.2"
+  }
+}
