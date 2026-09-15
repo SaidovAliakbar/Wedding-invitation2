@@ -1,2 +1,7 @@
 name = "wedding-invitation"
 pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "RSVP_DB"
+database_name = "RSVP_DB"
+database_id = "b012da1e-b053-4974-9d4f-8f52d69be536"
